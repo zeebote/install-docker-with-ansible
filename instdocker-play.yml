@@ -1,0 +1,87 @@
+---
+  - hosts: all
+    become: true
+    tasks:
+    - name: Install packages that allow apt to be used over HTTPS
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg-agent
+        - software-properties-common
+
+    - name: Add an apt signing key for Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add apt repository for stable version
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'bionic'
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+
+    - name: Add apt repository for stable version
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+
+    - name: Install docker and its dependecies for bionic
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'bionic'
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - docker-ce=5:18.09.6~3-0~ubuntu-bionic
+        - docker-ce-cli=5:18.09.6~3-0~ubuntu-bionic
+        - containerd.io
+
+    - name: Install docker and its dependecies for focal
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+
+    - name: Enable docker service
+      systemd:
+        name: docker
+        enabled: yes
+
+    - name: Create Docker service override dir
+      file:
+        path: /etc/systemd/system/docker.service.d
+        state: directory
+
+    - name: Download Docker service
+      copy:
+        src: override.conf
+        dest: /etc/systemd/system/docker.service.d/override.conf
+
+    - name: Dowload Container DNS
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+
+    - name: Reload systemD service
+      systemd:
+        daemon_reload: yes
+
+    - name: Reload docker service
+      systemd:
+        name: docker
+        state: restarted
+
