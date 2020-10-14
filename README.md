@@ -7,4 +7,4 @@ The install included 3 files: <br>
 To run the installation make sure you have all files on the same folder with the play-book yaml<br>
 This script assume you already configure access from your ansible host to your nodes:<br>
 <br>
-ansible-playbook -i ansible-nodes instdocker-play.yml --ask-become-pass
+`ansible-playbook -i ansible-nodes instdocker-play.yml --ask-become-pass`
